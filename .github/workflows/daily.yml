@@ -2,7 +2,7 @@ name: Daily Cafe Auto Comment
 
 on:
   schedule:
-    - cron: "0 1 * * *"  # 매일 01:00 UTC = 오전 10:00 KST
+    - cron: "0 0,4,8 * * *"  # 하루에 세 번: 00:00, 04:00, 08:00 UTC 한국타임기준 09:00, 13:00, 17:00
   workflow_dispatch: {}   # 수동 실행도 가능
 
 jobs:
@@ -41,4 +41,4 @@ jobs:
           DO_COMMENT: "true"
           DO_LIKE: "true"   # 원하면 true
         run: |
-          python runner.py
+          xvfb-run -a python runner.py
