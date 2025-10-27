@@ -9,6 +9,7 @@ from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 import pyperclip
 from openai import OpenAI
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver import ActionChains, Keys
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
@@ -38,6 +39,21 @@ COMMUNITIES = {
     "결혼준비 토론방": "113",
 }
 
+TITLE_CANDIDATES = [
+    (By.CSS_SELECTOR, "h3.title_text"),
+    (By.CSS_SELECTOR, "div.ArticleTitle"),
+    (By.CSS_SELECTOR, "#articleTitle"),
+    (By.CSS_SELECTOR, "h2#title_area"),
+]
+
+CONTENT_CANDIDATES = [
+    (By.CSS_SELECTOR, "div.se-module.se-module-text"),
+    (By.CSS_SELECTOR, "div.se-component.se-text"),
+    (By.CSS_SELECTOR, "div.se_component_wrap"),
+    (By.CSS_SELECTOR, "div.ContentRenderer"),
+    (By.CSS_SELECTOR, "#postContent"),
+]
+
 # ---------- 로깅 ----------
 logging.basicConfig(
     level=logging.INFO,
@@ -58,6 +74,55 @@ DEFAULT_PROMPT_HEAD = (
     "당신은 한국어 커뮤니티의 친근한 멤버입니다.\n"
     "글의 분위기에 맞춰 자연스럽고 사람답게, 단 한 문장만 작성하세요.\n"
 )
+
+def _wait_ready(self, timeout=20):
+    WebDriverWait(self.driver, timeout).until(
+        lambda d: d.execute_script("return document.readyState") == "complete"
+    )
+
+def _switch_to_cafe_main(self, timeout=20) -> bool:
+    d = self.driver
+    try:
+        d.switch_to.default_content()
+    except Exception:
+        pass
+    try:
+        WebDriverWait(d, timeout).until(
+            EC.frame_to_be_available_and_switch_to_it((By.ID, "cafe_main"))
+        )
+        return True
+    except TimeoutException:
+        return False
+
+def _dump_debug(self, prefix="debug"):
+    # 실패 시 상황 파악용 아티팩트 남기기 (Actions에서 업로드)
+    import os
+    import time
+    ts = time.strftime("%Y%m%d_%H%M%S")
+    png = f"{prefix}_{ts}.png"
+    html = f"{prefix}_{ts}.html"
+    try:
+        self.driver.save_screenshot(png)
+    except Exception:
+        pass
+    try:
+        with open(html, "w", encoding="utf-8") as f:
+            f.write(self.driver.page_source)
+    except Exception:
+        pass
+    return png, html
+
+def _find_first(self, locators, timeout=20):
+    wait = WebDriverWait(self.driver, timeout)
+    last_err = None
+    for by, sel in locators:
+        try:
+            el = wait.until(EC.presence_of_element_located((by, sel)))
+            return el
+        except Exception as e:
+            last_err = e
+            continue
+    raise last_err or TimeoutException("Element not found for any locator")
 
 def build_prompt_for_community(community_name: str, tone: str, max_chars: int, title: str, content: str) -> str:
     head = COMMUNITY_PROMPT_MAP.get(community_name, DEFAULT_PROMPT_HEAD)
@@ -221,41 +286,87 @@ class CafeBot:
     def comment_and_like_once(self, community_name: str) -> None:
         d = self.driver
         try:
-            d.switch_to.frame("cafe_main")
-        except Exception:
-            pass
+            self._wait_ready(timeout=25)
 
-        title_el = WebDriverWait(d, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, "h3.title_text")))
-        title = title_el.text
-        content_el = d.find_element(By.CSS_SELECTOR, "div.se-module.se-module-text")
-        content = content_el.text
+            if not self._switch_to_cafe_main(timeout=20):
+                # 권한/리다이렉트/프레임 로드 실패
+                self.logger.warning("cafe_main 프레임 진입 실패. 스크린샷 덤프")
+                self._dump_debug("frame_fail")
+                return
 
-        if DO_COMMENT:
-            comment = self._gen_comment(community_name, title, content)
-            box = WebDriverWait(d, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "textarea.comment_inbox_text")))
-            try: box.clear()
-            except Exception: pass
-            box.send_keys(comment)
-            d.find_element(By.CSS_SELECTOR, "a.button.btn_register").click()
-            time.sleep(1.2)
-            logger.info(f"Comment: {comment}")
+            # 제목/본문 파싱 (폴백 셀렉터)
+            title_el = self._find_first(TITLE_CANDIDATES, timeout=20)
+            title = title_el.text.strip()
 
-        if DO_LIKE:
-            # 좋아요 버튼들(댓글/본문 영역에 여러 개 있을 수 있어 안전하게 존재하는 것만 클릭)
-            like_btns = d.find_elements(By.CSS_SELECTOR, "div.ReplyBox a.like_no.u_likeit_list_btn._button.off span.u_ico._icon")
-            cnt = 0
-            for b in like_btns:
-                try:
-                    b.click(); cnt += 1
-                    time.sleep(random.uniform(0.6,1.2))
-                except Exception:
-                    pass
-            logger.info(f"Like clicked: {cnt}")
+            # 일부 글은 본문 셀렉터가 여러 조각이므로 join
+            content_text = ""
+            for by, sel in CONTENT_CANDIDATES:
+                nodes = d.find_elements(by, sel)
+                if nodes:
+                    content_text = " ".join(n.text for n in nodes if n.text.strip())
+                    if content_text.strip():
+                        break
 
-        try:
-            d.switch_to.default_content()
-        except Exception:
-            pass
+            if not content_text.strip():
+                # 한 번 더 스크롤해서 레이지로드 대비
+                d.execute_script("window.scrollTo(0, document.body.scrollHeight * 0.3);")
+                time.sleep(0.8)
+                nodes = d.find_elements(By.CSS_SELECTOR, "div.se-module.se-module-text")
+                if nodes:
+                    content_text = " ".join(n.text for n in nodes if n.text.strip())
+
+            if not content_text.strip():
+                self.logger.warning("본문 추출 실패. 스크린샷 덤프")
+                self._dump_debug("content_fail")
+                # 본문 없이도 댓글은 생성 가능 → 계속 진행할지 말지 선택
+                content_text = ""
+
+            # 댓글 작성
+            if DO_COMMENT:
+                comment = self._gen_comment(community_name, title, content_text)
+                box = WebDriverWait(d, 15).until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, "textarea.comment_inbox_text"))
+                )
+                try: box.clear()
+                except Exception: pass
+                box.send_keys(comment)
+
+                submit = self._find_first([
+                    (By.CSS_SELECTOR, "a.button.btn_register"),
+                    (By.CSS_SELECTOR, "button.btn_register"),
+                    (By.CSS_SELECTOR, "button[type='submit']"),
+                ], timeout=10)
+                submit.click()
+                time.sleep(1.2)
+                self.logger.info(f"Comment: {comment}")
+
+            # 좋아요 (옵션)
+            if DO_LIKE:
+                like_btns = d.find_elements(
+                    By.CSS_SELECTOR,
+                    "div.ReplyBox a.like_no.u_likeit_list_btn._button.off span.u_ico._icon"
+                )
+                cnt = 0
+                for b in like_btns:
+                    try:
+                        b.click(); cnt += 1
+                        time.sleep(random.uniform(0.6, 1.2))
+                    except Exception:
+                        pass
+                self.logger.info(f"Like clicked: {cnt}")
+
+        except TimeoutException as e:
+            self.logger.error(f"[Timeout] {e}. 스크린샷 저장.")
+            self._dump_debug("timeout")
+            # 문제 글은 건너뛰기
+        except Exception as e:
+            self.logger.error(f"[comment_and_like_once] {e}", exc_info=True)
+            self._dump_debug("unexpected")
+        finally:
+            try:
+                d.switch_to.default_content()
+            except Exception:
+                pass
 
 
 def main():

@@ -42,3 +42,12 @@ jobs:
           DO_LIKE: "true"   # 원하면 true
         run: |
           xvfb-run -a python runner.py
+
+      - name: Upload debug artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: run-debug
+          path: |
+            *.png
+            *.html
