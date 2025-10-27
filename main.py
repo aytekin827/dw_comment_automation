@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import random
+import sys
 import time
 # GUI
 import tkinter as tk
@@ -31,7 +32,7 @@ from helpers import (build_prompt, build_prompt_for_community, clip_to_kchars,
 
 communities_dict: Dict[str, str] = {
     "자유게시판":"114","궁금한점 질문답변":"34","힘들어요 위로해주세요":"191","매일 쓰는 결혼일기":"458",
-    "결혼준비 전문정보":"459","남들은 어떻게 하나요?":"437","자주묻는질문(FAQ)":"142","다이어트 질문답변":"190",
+    "남들은 어떻게 하나요?":"437","자주묻는질문(FAQ)":"142","다이어트 질문답변":"190",
     "결혼준비 토론방":"113","나의 시댁은/처가댁은":"192","선택장애 모여라":"115","내신랑신부자랑하기":"160",
     "나만의 요리비법":"193","신랑신부 갈등과 해소":"194","내가 결혼하는 이유":"195","허니문지역선정이유":"161",
     "결혼준비 자료실":"91","다이렉트블로거":"121","데이트 맛집 소개":"196","신혼 게시판":"154",
@@ -63,6 +64,19 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("다이렉트 카페 좋아요/댓글 자동봇")
+
+        if getattr(sys, 'frozen', False):  # PyInstaller로 빌드된 경우
+            base_path = sys._MEIPASS
+        else:
+            base_path = os.path.dirname(__file__)
+
+        icon_path = os.path.join(base_path, "icon2.ico")
+        # 런타임 창 아이콘 설정
+        try:
+            self.iconbitmap(icon_path)
+        except Exception as e:
+            print("아이콘 설정 실패:", e)
+
         self.geometry("600x1000")
 
         self.cfg = Config()
