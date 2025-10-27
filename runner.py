@@ -75,54 +75,7 @@ DEFAULT_PROMPT_HEAD = (
     "글의 분위기에 맞춰 자연스럽고 사람답게, 단 한 문장만 작성하세요.\n"
 )
 
-def _wait_ready(self, timeout=20):
-    WebDriverWait(self.driver, timeout).until(
-        lambda d: d.execute_script("return document.readyState") == "complete"
-    )
 
-def _switch_to_cafe_main(self, timeout=20) -> bool:
-    d = self.driver
-    try:
-        d.switch_to.default_content()
-    except Exception:
-        pass
-    try:
-        WebDriverWait(d, timeout).until(
-            EC.frame_to_be_available_and_switch_to_it((By.ID, "cafe_main"))
-        )
-        return True
-    except TimeoutException:
-        return False
-
-def _dump_debug(self, prefix="debug"):
-    # 실패 시 상황 파악용 아티팩트 남기기 (Actions에서 업로드)
-    import os
-    import time
-    ts = time.strftime("%Y%m%d_%H%M%S")
-    png = f"{prefix}_{ts}.png"
-    html = f"{prefix}_{ts}.html"
-    try:
-        self.driver.save_screenshot(png)
-    except Exception:
-        pass
-    try:
-        with open(html, "w", encoding="utf-8") as f:
-            f.write(self.driver.page_source)
-    except Exception:
-        pass
-    return png, html
-
-def _find_first(self, locators, timeout=20):
-    wait = WebDriverWait(self.driver, timeout)
-    last_err = None
-    for by, sel in locators:
-        try:
-            el = wait.until(EC.presence_of_element_located((by, sel)))
-            return el
-        except Exception as e:
-            last_err = e
-            continue
-    raise last_err or TimeoutException("Element not found for any locator")
 
 def build_prompt_for_community(community_name: str, tone: str, max_chars: int, title: str, content: str) -> str:
     head = COMMUNITY_PROMPT_MAP.get(community_name, DEFAULT_PROMPT_HEAD)
@@ -212,6 +165,55 @@ class CafeBot:
         # self.driver.find_element(By.ID, "log.login").click(); time.sleep(2.0)
         # logger.info("Logged in")
 
+    def _wait_ready(self, timeout=20):
+        WebDriverWait(self.driver, timeout).until(
+            lambda d: d.execute_script("return document.readyState") == "complete"
+        )
+
+    def _switch_to_cafe_main(self, timeout=20) -> bool:
+        d = self.driver
+        try:
+            d.switch_to.default_content()
+        except Exception:
+            pass
+        try:
+            WebDriverWait(d, timeout).until(
+                EC.frame_to_be_available_and_switch_to_it((By.ID, "cafe_main"))
+            )
+            return True
+        except TimeoutException:
+            return False
+
+    def _dump_debug(self, prefix="debug"):
+        # 실패 시 상황 파악용 아티팩트 남기기 (Actions에서 업로드)
+        import os
+        import time
+        ts = time.strftime("%Y%m%d_%H%M%S")
+        png = f"{prefix}_{ts}.png"
+        html = f"{prefix}_{ts}.html"
+        try:
+            self.driver.save_screenshot(png)
+        except Exception:
+            pass
+        try:
+            with open(html, "w", encoding="utf-8") as f:
+                f.write(self.driver.page_source)
+        except Exception:
+            pass
+        return png, html
+
+    def _find_first(self, locators, timeout=20):
+        wait = WebDriverWait(self.driver, timeout)
+        last_err = None
+        for by, sel in locators:
+            try:
+                el = wait.until(EC.presence_of_element_located((by, sel)))
+                return el
+            except Exception as e:
+                last_err = e
+                continue
+        raise last_err or TimeoutException("Element not found for any locator")
+
     def go_menu(self, menu_id: str):
         url = CAFE_BASE.format(menu_id=menu_id)
         self.driver.get(url); time.sleep(1.2)
@@ -290,7 +292,7 @@ class CafeBot:
 
             if not self._switch_to_cafe_main(timeout=20):
                 # 권한/리다이렉트/프레임 로드 실패
-                self.logger.warning("cafe_main 프레임 진입 실패. 스크린샷 덤프")
+                logger.warning("cafe_main 프레임 진입 실패. 스크린샷 덤프")
                 self._dump_debug("frame_fail")
                 return
 
@@ -316,7 +318,7 @@ class CafeBot:
                     content_text = " ".join(n.text for n in nodes if n.text.strip())
 
             if not content_text.strip():
-                self.logger.warning("본문 추출 실패. 스크린샷 덤프")
+                logger.warning("본문 추출 실패. 스크린샷 덤프")
                 self._dump_debug("content_fail")
                 # 본문 없이도 댓글은 생성 가능 → 계속 진행할지 말지 선택
                 content_text = ""
@@ -338,7 +340,7 @@ class CafeBot:
                 ], timeout=10)
                 submit.click()
                 time.sleep(1.2)
-                self.logger.info(f"Comment: {comment}")
+                logger.info(f"Comment: {comment}")
 
             # 좋아요 (옵션)
             if DO_LIKE:
@@ -353,14 +355,14 @@ class CafeBot:
                         time.sleep(random.uniform(0.6, 1.2))
                     except Exception:
                         pass
-                self.logger.info(f"Like clicked: {cnt}")
+                logger.info(f"Like clicked: {cnt}")
 
         except TimeoutException as e:
-            self.logger.error(f"[Timeout] {e}. 스크린샷 저장.")
+            logger.error(f"[Timeout] {e}. 스크린샷 저장.")
             self._dump_debug("timeout")
             # 문제 글은 건너뛰기
         except Exception as e:
-            self.logger.error(f"[comment_and_like_once] {e}", exc_info=True)
+            logger.error(f"[comment_and_like_once] {e}", exc_info=True)
             self._dump_debug("unexpected")
         finally:
             try:
