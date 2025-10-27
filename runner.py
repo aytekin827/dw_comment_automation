@@ -391,6 +391,7 @@ def main():
 
         for i, link in enumerate(links, 1):
             bot.driver.get(link); time.sleep(1.0)
+            bot._dump_debug("before_action")
             bot.comment_and_like_once(TARGET_COMMUNITY)
             logger.info(f"[{i}/{len(links)}] done")
             time.sleep(random.uniform(1.0, 5.0))
