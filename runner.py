@@ -130,22 +130,22 @@ class CafeBot:
             logger.info("Chrome closed")
 
     def login(self):
-        # d = self.driver
-        # d.get(BASE_LOGIN); time.sleep(1.5)
-        # d.find_element(By.ID, "id").send_keys(NAVER_ID)
-        # pw = d.find_element(By.ID, "pw")
-        # pw.click(); pw.send_keys(NAVER_PW)
-        # d.find_element(By.ID, "log.login").click()
-        # time.sleep(2.0)
+        d = self.driver
+        d.get(BASE_LOGIN); time.sleep(1.5)
+        d.find_element(By.ID, "id").send_keys(NAVER_ID)
+        pw = d.find_element(By.ID, "pw")
+        pw.click(); pw.send_keys(NAVER_PW)
+        d.find_element(By.ID, "log.login").click()
+        time.sleep(2.0)
 
-        assert self.driver
-        self.driver.get(BASE_LOGIN); time.sleep(1.6)
-        id_input = self.driver.find_element(By.ID, "id"); id_input.click()
-        pyperclip.copy(NAVER_ID); ActionChains(self.driver).key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform(); time.sleep(1)
-        pw_input = self.driver.find_element(By.ID, "pw"); pw_input.click()
-        pyperclip.copy(NAVER_PW); ActionChains(self.driver).key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform(); time.sleep(1)
-        self.driver.find_element(By.ID, "log.login").click(); time.sleep(2.0)
-        logger.info("Logged in")
+        # assert self.driver
+        # self.driver.get(BASE_LOGIN); time.sleep(1.6)
+        # id_input = self.driver.find_element(By.ID, "id"); id_input.click()
+        # pyperclip.copy(NAVER_ID); ActionChains(self.driver).key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform(); time.sleep(1)
+        # pw_input = self.driver.find_element(By.ID, "pw"); pw_input.click()
+        # pyperclip.copy(NAVER_PW); ActionChains(self.driver).key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform(); time.sleep(1)
+        # self.driver.find_element(By.ID, "log.login").click(); time.sleep(2.0)
+        # logger.info("Logged in")
 
     def go_menu(self, menu_id: str):
         url = CAFE_BASE.format(menu_id=menu_id)
