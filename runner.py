@@ -131,13 +131,28 @@ class CafeBot:
 
     def open_browser(self):
         opts = webdriver.ChromeOptions()
+
+        # (headless/new는 환경에 맞게)
         # opts.add_argument("--headless=new")
-        opts.add_argument("--no-sandbox")
+
+        # 안정화
         opts.add_argument("--disable-gpu")
+        opts.add_argument("--no-sandbox")
         opts.add_argument("--disable-dev-shm-usage")
+        opts.add_argument("--window-size=1280,900")
+
+        # 언어 힌트
+        opts.add_argument("--lang=ko-KR")
+        prefs = {"intl.accept_languages": "ko-KR,ko"}
+        opts.add_experimental_option("prefs", prefs)
+
+        # (임시 프로필/캐시 경로 — 이전에 안내드린 충돌 방지 코드 유지)
+        opts.add_argument(f"--user-data-dir={self._tmp_profile_dir}")
+        opts.add_argument(f"--disk-cache-dir={self._tmp_cache_dir}")
+
         service = ChromeService(ChromeDriverManager().install())
         self.driver = webdriver.Chrome(service=service, options=opts)
-        logger.info("Chrome (headless) started")
+
 
     def close(self):
         try:
