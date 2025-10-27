@@ -263,9 +263,11 @@ class CafeBot:
             self._seen.update(new_ones)
             for u in new_ones:
                 res.append(u)
+                logger.info(f"[Collected] {u} (total: {len(res)})")
                 if len(res) >= target: break
             if len(res) >= target: break
             if not self._next_page(): break
+        logger.info(f"Collected {len(res)} links after {page} pages, ")
         return res
 
     def _gen_comment(self, community_name: str, title: str, content: str) -> str:
