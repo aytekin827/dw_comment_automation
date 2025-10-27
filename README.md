@@ -136,4 +136,4 @@ Pull Request / Issue는 언제나 환영입니다!
 
 작은 프로젝트이지만 도움이 되셨다면 커피 한잔으로 응원해주세요!
 
-커피 한 잔 후원하기
+[커피한잔 후원하기](supertoss://send?amount=2900&bank=%EC%BC%80%EC%9D%B4%EB%B1%85%ED%81%AC&accountNo=100204788592&origin=qr "개발자에게 커피 한잔 후원하기")
