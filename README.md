@@ -5,6 +5,7 @@
 GUI 기반으로 쉽게 설정하고 실행할 수 있으며, OpenAI LLM을 이용해 자연스러운 한국어 댓글을 생성합니다.
 
 **개인 openAI API 필요**
+<img width="609" height="525" alt="그림5" src="https://github.com/user-attachments/assets/869e8b39-ae18-4a60-a332-10bc8ac223a3" />
 
 ---
 
