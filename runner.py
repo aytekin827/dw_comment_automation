@@ -147,8 +147,8 @@ class CafeBot:
         opts.add_experimental_option("prefs", prefs)
 
         # (임시 프로필/캐시 경로 — 이전에 안내드린 충돌 방지 코드 유지)
-        opts.add_argument(f"--user-data-dir={self._tmp_profile_dir}")
-        opts.add_argument(f"--disk-cache-dir={self._tmp_cache_dir}")
+        # opts.add_argument(f"--user-data-dir={self._tmp_profile_dir}")
+        # opts.add_argument(f"--disk-cache-dir={self._tmp_cache_dir}")
 
         service = ChromeService(ChromeDriverManager().install())
         self.driver = webdriver.Chrome(service=service, options=opts)
