@@ -41,4 +41,4 @@ jobs:
           DO_COMMENT: "true"
           DO_LIKE: "true"   # 원하면 true
         run: |
-          python runner.py
+          xvfb-run -a python runner.py
