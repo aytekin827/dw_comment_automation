@@ -39,6 +39,6 @@ jobs:
           PER_PAGE_CAP: "50"
           MAX_PAGES: "20"
           DO_COMMENT: "true"
-          DO_LIKE: "false"   # 원하면 true
+          DO_LIKE: "true"   # 원하면 true
         run: |
           python runner.py
