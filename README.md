@@ -140,6 +140,6 @@ Pull Request / Issue는 언제나 환영입니다!
 
 ⬇⬇ 커피한잔 후원하기 ⬇⬇
 
-<img width="349" height="399" alt="DonateACoffee" src="https://github.com/user-attachments/assets/a2e14fd8-9a36-4448-9efc-f143ebb917ed" />
+<img width="250" height="300" alt="DonateACoffee" src="https://github.com/user-attachments/assets/a2e14fd8-9a36-4448-9efc-f143ebb917ed" />
 
 
